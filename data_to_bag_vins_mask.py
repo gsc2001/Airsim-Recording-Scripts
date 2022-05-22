@@ -11,6 +11,7 @@ from cv_bridge import CvBridge
 import cv2
 from tqdm import tqdm
 
+
 class ParseKwargs(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, dict())
@@ -19,9 +20,10 @@ class ParseKwargs(argparse.Action):
             getattr(namespace, self.dest)[key] = value
 
 
-parser = argparse.ArgumentParser(description='Converts original airsim files (capture/ imu_data.txt) into bagfile format')
+parser = argparse.ArgumentParser(
+    description='Converts original airsim files (capture/ imu_data.txt) into bagfile format')
 parser.add_argument('--dataset-config', required=True, action=ParseKwargs, nargs="*")
-parser.add_argument('--percentage', type=int,default=100, help='How much of the dataset to compress')
+parser.add_argument('--percentage', type=int, default=100, help='How much of the dataset to compress')
 parser.add_argument('--output', required=True, help='Name of the output file')
 args = parser.parse_args()
 output_name = args.output
@@ -34,15 +36,15 @@ with rosbag.Bag(os.path.join(output_name), 'w') as bag:
             offset = 220462703104
         # Write IMU messages
         print('Dataset', dataset_name)
-        imu_data_file = open(os.path.join(dataset_path,'imu_data.txt'), 'r')
+        imu_data_file = open(os.path.join(dataset_path, 'imu_data.txt'), 'r')
         imu_data_file = list(imu_data_file)
         print('IMU')
-        for line in tqdm(range(1,int(args.percentage/100 * len(imu_data_file)))):
+        for line in tqdm(range(1, int(args.percentage / 100 * len(imu_data_file)))):
             line = imu_data_file[line]
             l = line.rstrip().split("\t")
             l = list(map(eval, l))
 
-            timestamp = rospy.Time.from_sec((l[0] + offset)/1e9)
+            timestamp = rospy.Time.from_sec((l[0] + offset) / 1e9)
             imu_msg = Imu()
 
             imu_msg.header.stamp = timestamp
@@ -63,15 +65,15 @@ with rosbag.Bag(os.path.join(output_name), 'w') as bag:
             bag.write(f"/{dataset_name}/imu", imu_msg, timestamp)
 
         # gt data
-        gt_data_file = open(os.path.join(dataset_path,'gt_data.txt'), 'r')
+        gt_data_file = open(os.path.join(dataset_path, 'gt_data.txt'), 'r')
         gt_data_file = list(gt_data_file)
         print('GT DATA')
-        for line in tqdm(range(1,int(args.percentage/100 * len(gt_data_file)))):
+        for line in tqdm(range(1, int(args.percentage / 100 * len(gt_data_file)))):
             line = gt_data_file[line]
             l = line.rstrip().split("\t")
             l = list(map(eval, l))
 
-            timestamp = rospy.Time.from_sec((l[0] + offset)/1e9)
+            timestamp = rospy.Time.from_sec((l[0] + offset) / 1e9)
             pose = PoseStamped()
 
             pose.header.stamp = timestamp
@@ -93,10 +95,10 @@ with rosbag.Bag(os.path.join(output_name), 'w') as bag:
         img_data_file = list(img_data_file)
         cb = CvBridge()
         print('Images')
-        for i in tqdm(range(int(args.percentage / 100 * len(img_data_file) ))):
+        for i in tqdm(range(int(args.percentage / 100 * len(img_data_file)))):
             line = img_data_file[i]
             l = line.rstrip().split("\t")
-            timestamp = rospy.Time.from_sec((int(l[0]) + offset)/1e9)
+            timestamp = rospy.Time.from_sec((int(l[0]) + offset) / 1e9)
             img_path = os.path.join(dataset_path, ('captures/' + str(i) + '_scene.png'))
             img_rgb = cv2.imread(img_path)
             img_path = os.path.join(dataset_path, ('captures/' + str(i) + '_depth.png'))
