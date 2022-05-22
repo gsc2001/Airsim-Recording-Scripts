@@ -56,7 +56,7 @@ def read_path_file(file_name: str):
                 path.append(MoveStep(position=list(map(float, items[1:]))))
             elif items[0] == 'r':
                 # rotation
-                path.append(RotationStep(by_angle=float(items[1])))
+                path.append(RotationStep(to_yaw=float(items[1])))
             else:
                 raise ValidationErr(f'Not supported step type: {items[0]}')
     return path
@@ -74,7 +74,7 @@ def moveClientOnPath(client: airsim.MultirotorClient, path: List[Step]):
                 print(step, step.position, args.velocity)
                 client.moveToPositionAsync(*step.position, args.velocity).join()
             elif step.type_ == StepTypes.rotate:
-                client.rotateToYawAsync(step.to_angle).join()
+                client.rotateToYawAsync(step.to_yaw).join()
 
 
 def main():
