@@ -3,11 +3,14 @@ import os
 from time import sleep
 import argparse
 
+from numpy import require
+
 
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--ip', default='')
     parser.add_argument('-o', '--output', default='output', help='Captures path')
+    parser.add_argument('--drone_name', required=True, help='Drone Name')
     args = parser.parse_args()
     return args
 
@@ -32,8 +35,8 @@ def main():
 
     while(client.ping()):
         sleep(1 / imu_frequency)
-        real_pos = client.simGetGroundTruthKinematics().position
-        imu_data = client.getImuData()
+        real_pos = client.simGetGroundTruthKinematics(vehicle_name=args.drone_name).position
+        imu_data = client.getImuData(vehicle_name=args.drone_name)
 
         gt_dict = {}
         imu_data_dict = {}
@@ -54,8 +57,8 @@ def main():
         ]
         imu_data_dict['timestamp'] = imu_data.time_stamp
 
-        real_pos = client.simGetGroundTruthKinematics().position
-        real_orient = client.simGetGroundTruthKinematics().orientation
+        real_pos = client.simGetGroundTruthKinematics(vehicle_name=args.drone_name).position
+        real_orient = client.simGetGroundTruthKinematics(vehicle_name=args.drone_name).orientation
         gt_dict['position'] = [real_pos.x_val, real_pos.y_val, real_pos.z_val]
         gt_dict['orientation'] = [real_orient.w_val, real_orient.x_val, real_orient.y_val, real_orient.z_val]
         gt_dict['timestamp'] = imu_data.time_stamp

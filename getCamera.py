@@ -9,6 +9,7 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--ip', default='')
     parser.add_argument('-o', '--output', default='output', help='Captures path')
+    parser.add_argument('--drone_name', required=True, help='Drone name')
     args = parser.parse_args()
     return args
 
@@ -33,8 +34,8 @@ def main():
     while(client.ping()):
         responses = client.simGetImages([airsim.ImageRequest("0", airsim.ImageType.Scene, False, False)
                                         # airsim.ImageRequest("0", airsim.ImageType.DepthPerspective, True)
-                                         ])
-        timestamp = client.getMultirotorState().timestamp
+                                         ], vehicle_name=args.drone_name)
+        timestamp = client.getMultirotorState(vehicle_name=args.drone_name).timestamp
         response_scene = responses[0]
         # response_depth = responses[2]
 

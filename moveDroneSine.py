@@ -1,10 +1,9 @@
-from re import S
-from termios import VEOL
 from typing import List
 from xml.dom import ValidationErr
 import airsim
 from dataclasses import dataclass
 from enum import Enum, auto
+from black import out
 import numpy as np
 import time
 import subprocess
@@ -41,6 +40,7 @@ def get_args():
     parser.add_argument('-i', '--init_path', required=True, help='Initialization Path File')
     parser.add_argument('-v', '--velocity', required=True, type=float, help='Velocity of drone')
     parser.add_argument('-o', '--output', default='output', help='Output path')
+    parser.add_argument('--drone_name', required=True)
     parser.add_argument('--auto_rotation', action='store_true')
     args = parser.parse_args()
     return args
@@ -67,14 +67,18 @@ def moveClientOnPath(client: airsim.MultirotorClient, path: List[Step]):
     if args.auto_rotation:
         assert all(step.type_ == StepTypes.move for step in path), "Only move steps for auto rotation"
         total_path = list(map(lambda step: airsim.Vector3r(step.position), path))
-        client.moveOnPathAsync(total_path, args.velocity, drivetrain=airsim.DrivetrainType.ForwardOnly).join()
+        client.moveOnPathAsync(
+            total_path,
+            args.velocity,
+            drivetrain=airsim.DrivetrainType.ForwardOnly,
+            vehicle_name=args.drone_name).join()
     else:
         for step in path:
             if step.type_ == StepTypes.move:
                 print(step, step.position, args.velocity)
-                client.moveToPositionAsync(*step.position, args.velocity).join()
+                client.moveToPositionAsync(*step.position, args.velocity, vehicle_name=args.drone_name).join()
             elif step.type_ == StepTypes.rotate:
-                client.rotateToYawAsync(step.to_yaw).join()
+                client.rotateToYawAsync(step.to_yaw, vehicle_name=args.drone_name).join()
 
 
 def main():
@@ -88,10 +92,10 @@ def main():
 
     # Setup airsim drone
     client = airsim.MultirotorClient(ip=args.ip)
-    client.reset()
+    # client.reset()
     client.confirmConnection()
-    client.enableApiControl(True)
-    client.armDisarm(True)
+    client.enableApiControl(True, vehicle_name=args.drone_name)
+    client.armDisarm(True, vehicle_name=args.drone_name)
 
     # assign ids
     # assignIds(client)
@@ -99,8 +103,8 @@ def main():
 
     print("Initializing camera ...")
     # initializing camera
-    responses = client.simGetImages([airsim.ImageRequest("0", airsim.ImageType.Scene, False, False),
-                                     airsim.ImageRequest("0", airsim.ImageType.Segmentation, False, False)])
+    responses = client.simGetImages([airsim.ImageRequest("0", airsim.ImageType.Scene, False, False), airsim.ImageRequest(
+        "0", airsim.ImageType.Segmentation, False, False)], vehicle_name=args.drone_name)
     time.sleep(2)
 
     print("Initializing Done ...")
@@ -110,7 +114,8 @@ def main():
     starting = init_path[0]
     # time.sleep(1)
     print('Moving to start point for initialization ...')
-    client.moveToPositionAsync(*starting.position, 1).join()
+    client.moveToZAsync(starting.position[2], 1, vehicle_name=args.drone_name).join()
+    client.moveToPositionAsync(*starting.position, 1, vehicle_name=args.drone_name).join()
     print('Reached starting point...')
 
     output = args.output
@@ -120,8 +125,8 @@ def main():
         if os.path.isdir(captures_dir):
             os.system("rm -rf " + captures_dir)
         os.system("rm -rf " + output)
-    os.mkdir(output)
-    os.mkdir(captures_dir)
+
+    os.system("mkdir -p " + captures_dir)
 
     # Wait for 'g' key presss
     print("Press 'g' to start recording")
@@ -129,8 +134,10 @@ def main():
 
     # Start motion and recording
     print("starting recording..")
-    camera_process = subprocess.Popen(['python', 'getCamera.py', '--ip', args.ip, '--output', captures_dir])
-    imu_process = subprocess.Popen(['python', 'getDroneData.py', '--ip', args.ip, '--output', output])
+    camera_process = subprocess.Popen(['python', 'getCamera.py', '--ip', args.ip,
+                                      '--output', captures_dir, '--drone_name', args.drone_name])
+    imu_process = subprocess.Popen(['python', 'getDroneData.py', '--ip', args.ip,
+                                   '--output', output, '--drone_name', args.drone_name])
 
     print("Initialization path starting ...")
 
@@ -150,7 +157,7 @@ def main():
     camera_process.kill()
     imu_process.kill()
     time.sleep(1)
-    client.enableApiControl(False)
+    client.enableApiControl(False, vehicle_name=args.drone_name)
     time.sleep(1)
     print("connection closed...")
 
