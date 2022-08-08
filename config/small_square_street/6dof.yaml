@@ -1,0 +1,14 @@
+ip: localhost
+drones:
+    d1:
+        init_path: paths/small_square_street/6dof/init1.txt
+        main_path: paths/small_square_street/6dof/steps1.txt
+        velocity: 5
+        output_dir: output/d1
+        auto_rotation: false
+    d2:
+        init_path: paths/small_square_street/6dof/init2.txt
+        main_path: paths/small_square_street/6dof/steps2.txt
+        velocity: 10
+        output_dir: output/d2
+        auto_rotation: false

@@ -114,8 +114,8 @@ def main():
     starting = init_path[0]
     # time.sleep(1)
     print('Moving to start point for initialization ...')
-    client.moveToZAsync(starting.position[2], 1, vehicle_name=args.drone_name).join()
-    client.moveToPositionAsync(*starting.position, 1, vehicle_name=args.drone_name).join()
+    client.moveToZAsync(starting.position[2], args.velocity, vehicle_name=args.drone_name).join()
+    client.moveToPositionAsync(*starting.position, args.velocity, vehicle_name=args.drone_name).join()
     print('Reached starting point...')
 
     output = args.output

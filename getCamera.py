@@ -32,18 +32,27 @@ def main():
 
     i = 0
     while(client.ping()):
-        responses = client.simGetImages([airsim.ImageRequest("0", airsim.ImageType.Scene, False, False)
-                                        # airsim.ImageRequest("0", airsim.ImageType.DepthPerspective, True)
+        responses = client.simGetImages([airsim.ImageRequest("0", airsim.ImageType.Scene, False, False), airsim.ImageRequest("0", airsim.ImageType.DepthPerspective, True)
                                          ], vehicle_name=args.drone_name)
         timestamp = client.getMultirotorState(vehicle_name=args.drone_name).timestamp
         response_scene = responses[0]
-        # response_depth = responses[2]
+        response_depth = responses[1]
 
         if (response_scene.height != 0 and response_scene.width != 0):
             # and response_depth.height != 0 and response_depth.width != 0):
             img1d_scene = np.fromstring(response_scene.image_data_uint8, dtype=np.uint8)
             img_rgb_scene = img1d_scene.reshape(response_scene.height, response_scene.width, 3)
 
+            depth_img_in_meters  = np.array(response_depth.image_data_float, dtype=np.float32)
+            depth_img_in_meters = depth_img_in_meters.reshape(response_depth.height, response_depth.width, 1)
+
+            # depth_img_in_millimeters = depth_img_in_meters * 1000
+            depth_img_in_centimeters = depth_img_in_meters * 100
+            # depth_16bit = np.clip(depth_img_in_millimeters, 0, 65535)
+            depth_cm_16bit = np.clip(depth_img_in_centimeters, 0, 65535)
+
+            cv2.imwrite(os.path.join(output,str(i) + "_scene" + '.png'), img_rgb_scene)
+            cv2.imwrite(os.path.join(output,str(i) + "_depth" + '.png'), depth_cm_16bit.astype('uint16'))
             # depth_img_in_meters  = np.array(response_depth.image_data_float, dtype=np.float32)
             # depth_img_in_meters = depth_img_in_meters.reshape(response_depth.height, response_depth.width, 1)
 
